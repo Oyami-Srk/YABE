@@ -6,7 +6,7 @@ Empty Project with only a rolling heart.
 ----------------------------------------
 
 ## TODO:
-* Fill this project with some junk code  -  Here~
+* Fill this project with some junk code  -  **Here~**
 * Make it run
 * Watch it running and drink a cup of banana
 * Stop it
