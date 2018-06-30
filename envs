@@ -1,0 +1,4 @@
+# =v=
+
+export FLASK_APP=yabe
+export FLASK_ENV=developmen
