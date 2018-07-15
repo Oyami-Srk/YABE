@@ -14,11 +14,29 @@ class Tag(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     content = db.Column(db.String(64), unique=True)
 
+    def __repr__(self):
+        return '<Tag {}> {}'.format(self.id, self.content)
+
 
 class Category(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140))
     summary = db.Column(db.Text)
+
+    def __repr__(self):
+        return '<Category {}> {}'.format(self.id, self.title)
+
+
+class Comment(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64))
+    email = db.Column(db.String(64))
+    content = db.Column(db.Text)
+    post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
+
+    def __repr__(self):
+        return '<Comment {} of Page {}> {}<{}>: {}'.format(
+            self.id, self.post_id, self.username, self.email, self.content)
 
 
 class Post(db.Model):
@@ -26,7 +44,7 @@ class Post(db.Model):
     title = db.Column(db.String(140))
     post_time = db.Column(db.DateTime, default=datetime.utcnow)
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
-    comment = db.Column(db.Integer, unique=True)
+    comments = db.relationship('Comment', backref='post', lazy='dynamic')
     tags = db.relationship(
         'Tag',
         secondary=r_tags,
@@ -50,6 +68,19 @@ class Post(db.Model):
         if self.has_tag(tag):
             self.tags.remove(tag)
             return self
+
+    def add_comment(self, comment):
+        if not self.has_comment(comment):
+            self.comments.append(comment)
+            return self
+
+    def remove_comment(self, comment):
+        if self.has_comment(comment):
+            self.comments.remove(comment)
+            return self
+
+    def has_comment(self, comment):
+        return self.comments.filter(Comment.id == comment.id).count() > 0
 
     def has_tag(self, tag):
         return self.tags.filter(r_tags.c.tag_id == tag.id).count() > 0
@@ -85,4 +116,4 @@ class Page(db.Model):
         return self.posts.filter(r_pages.c.post_id == post.id).count() > 0
 
     def __repr__(self):
-        return '<Page {}> {} post(s)'.format(self.id, len(self.posts.all()))
+        return '<Page {}> {} post(s)'.format(self.id, self.posts.count())
