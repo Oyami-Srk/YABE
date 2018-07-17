@@ -1,0 +1,11 @@
+<html>
+    <head>
+        <title>
+            {% if title %} {{ title }} {% else %} YABE - A Blog Engine{% endif %}
+        </title>
+    </head>
+    <body>
+        {% block content %}
+        {% endblock %}
+    </body>
+</html>
