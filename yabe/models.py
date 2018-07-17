@@ -1,5 +1,9 @@
-from yabe import db
+from yabe import db, yabe
 from datetime import datetime
+from flask import jsonify
+from passlib.apps import custom_app_context
+from itsdangerous import (TimedJSONWebSignatureSerializer as Serializer,
+                          SignatureExpired, BadSignature)
 
 r_tags = db.Table('r_tags',
                   db.Column('post_id', db.Integer, db.ForeignKey('post.id')),
@@ -37,6 +41,15 @@ class Comment(db.Model):
     def __repr__(self):
         return '<Comment {} of Page {}> {}<{}>: {}'.format(
             self.id, self.post_id, self.username, self.email, self.content)
+
+    def to_dict(self):
+        return {
+            'id': self.id,
+            'post_id': self.post_id,
+            'username': self.username,
+            'email': self.email,
+            'content': self.content
+        }
 
 
 class Post(db.Model):
@@ -91,6 +104,33 @@ class Post(db.Model):
     def __repr__(self):
         return '<Post {}> {}'.format(self.id, self.title)
 
+    def to_dict(self, summary=False):
+        result = {'id': self.id}
+        if not self.invisible:
+            result = dict(
+                result, **{
+                    'title': self.title,
+                    'post_time': self.post_time,
+                    'category_id': self.category_id,
+                    'tags': [(tag.id, tag.content) for tag in self.tags.all()],
+                    'draft': self.draft,
+                    'invisible': self.invisible,
+                    'protected': self.protected
+                })
+            if not self.protected:
+                if summary:
+                    result = dict(
+                        result, **{
+                            'content':
+                            self.content,
+                            'comments':
+                            [comment.to_dict() for comment in self.comments]
+                        })
+        return result
+
+    def to_json(self, summary=True):
+        return jsonify(self.to_dict(summary))
+
 
 class Page(db.Model):
     id = db.Column(db.Integer, primary_key=True)
@@ -117,3 +157,31 @@ class Page(db.Model):
 
     def __repr__(self):
         return '<Page {}> {} post(s)'.format(self.id, self.posts.count())
+
+
+class Admin(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    username = db.Column(db.String(64))
+    password = db.Column(db.String(128))
+    has_power = db.Column(db.Boolean)
+
+    def set_passwd(self, passwd):
+        self.password = custom_app_context.encrypt(passwd)
+
+    def chk_passwd(self, passwd):
+        return custom_app_context.verify(passwd, self.password)
+
+    def get_token(self, expiration=3600):
+        s = Serializer(yabe.config['SECRET_KEY'], expires_in=expiration)
+        return s.dumps({'id': self.id})
+
+    @staticmethod
+    def chk_token(token):
+        s = Serializer(yabe.config['SECRET_KEY'])
+        try:
+            data = s.loads(token)
+        except SignatureExpired:
+            return None
+        except BadSignature:
+            return None
+        return Admin.query.get(data['id'])
