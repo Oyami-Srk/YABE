@@ -29,6 +29,15 @@ def get_all_posts():
     })
 
 
+@api.route('/get_post')
+@auth.login_required
+def get_post():
+    post_id = request.args.get('post_id', 0, type=int)
+    post = Post.query.get_or_404(post_id)
+    print(post.to_json())
+    return post.to_json()
+
+
 @api.route('/create_user', methods=['POST'])
 def create_user():
     username = request.json.get('username')
