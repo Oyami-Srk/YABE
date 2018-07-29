@@ -37,6 +37,7 @@ class Comment(db.Model):
     email = db.Column(db.String(64))
     content = db.Column(db.Text)
     post_id = db.Column(db.Integer, db.ForeignKey('post.id'))
+    post_time = db.Column(db.DateTime, default=datetime.utcnow)
 
     def __repr__(self):
         return '<Comment {} of Page {}> {}<{}>: {}'.format(
@@ -46,6 +47,7 @@ class Comment(db.Model):
         return {
             'id': self.id,
             'post_id': self.post_id,
+            'post_time': self.post_time,
             'username': self.username,
             'email': self.email,
             'content': self.content
@@ -56,8 +58,10 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140))
     post_time = db.Column(db.DateTime, default=datetime.utcnow)
+    author = db.Column(db.String(64), default="Admin")
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
+    like = db.Column(db.Integer, default=0)
     tags = db.relationship(
         'Tag',
         secondary=r_tags,
@@ -67,9 +71,9 @@ class Post(db.Model):
     content = db.Column(db.Text)
     content_uri = db.Column(db.String(128))
 
-    draft = db.Column(db.Boolean)
-    invisible = db.Column(db.Boolean)
-    protected = db.Column(db.Boolean)
+    draft = db.Column(db.Boolean, default=True)
+    invisible = db.Column(db.Boolean, default=False)
+    protected = db.Column(db.Boolean, default=False)
     password = db.Column(db.String(64))  # Use md5
 
     def add_tag(self, tag):
@@ -112,6 +116,7 @@ class Post(db.Model):
                     'title': self.title,
                     'post_time': self.post_time,
                     'category_id': self.category_id,
+                    'author': self.author,
                     'tags': [(tag.id, tag.content) for tag in self.tags.all()],
                     'draft': self.draft,
                     'invisible': self.invisible,
@@ -163,7 +168,7 @@ class Admin(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64))
     password = db.Column(db.String(128))
-    has_power = db.Column(db.Boolean)
+    has_power = db.Column(db.Boolean, default=False)
 
     def set_passwd(self, passwd):
         self.password = custom_app_context.encrypt(passwd)
