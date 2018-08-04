@@ -1,5 +1,5 @@
 from yabe import yabe, db
-from .models import Post, Admin, Comment
+from .models import Post, Admin, Comment, Tag, Category
 import os
 import click
 
@@ -251,7 +251,11 @@ It converts "HTML", but keep intact partial entries like "xxxHTMLyyy" and so on.
         content=
         '<h1>Hello World!</h1><p/>This is a test post, remove it after development<p/>YABE - Yet Another Blog Engine'
     )
-    p2 = Post(title='Test Post 2', content=c, author="Shiroko")
+    p2 = Post(
+        title='Test Post 2',
+        content=c,
+        author="Shiroko",
+        summary="test summary test sumary这是一则测试摘要, 其中不能使用任何标签<h1>比如说这个</h1>")
     admin = Admin(username='admin', has_power=True)
     admin.set_passwd('123456')
     db.session.add(p1)
@@ -269,6 +273,20 @@ It converts "HTML", but keep intact partial entries like "xxxHTMLyyy" and so on.
     db.session.add(c2)
     p2.add_comment(c1)
     p2.add_comment(c2)
+    ct1 = Category(title="测试用分类", summary="这个分类是测试用分类, 不应该出现在生产数据库中.")
+    t1 = Tag(content="测试标签1")
+    t2 = Tag(content="T2")
+    t3 = Tag(content="for test 33333")
+    db.session.add(ct1)
+    db.session.add(t1)
+    db.session.add(t2)
+    db.session.add(t3)
+
+    p2.add_tag(t1)
+    p2.add_tag(t2)
+    p2.add_tag(t3)
+    ct1.add_post(p2)
+
     db.session.commit()
     db.session.close()
 
