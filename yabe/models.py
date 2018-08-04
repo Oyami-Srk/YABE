@@ -22,15 +22,6 @@ class Tag(db.Model):
         return '<Tag {}> {}'.format(self.id, self.content)
 
 
-class Category(db.Model):
-    id = db.Column(db.Integer, primary_key=True)
-    title = db.Column(db.String(140))
-    summary = db.Column(db.Text)
-
-    def __repr__(self):
-        return '<Category {}> {}'.format(self.id, self.title)
-
-
 class Comment(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     username = db.Column(db.String(64))
@@ -58,8 +49,8 @@ class Post(db.Model):
     id = db.Column(db.Integer, primary_key=True)
     title = db.Column(db.String(140))
     post_time = db.Column(db.DateTime, default=datetime.utcnow)
-    author = db.Column(db.String(64), default="Admin")
     category_id = db.Column(db.Integer, db.ForeignKey('category.id'))
+    author = db.Column(db.String(64), default="Admin")
     comments = db.relationship('Comment', backref='post', lazy='dynamic')
     like = db.Column(db.Integer, default=0)
     tags = db.relationship(
@@ -69,9 +60,10 @@ class Post(db.Model):
         lazy='dynamic')
 
     content = db.Column(db.Text)
+    summary = db.Column(db.Text)
     content_uri = db.Column(db.String(128))
 
-    draft = db.Column(db.Boolean, default=True)
+    draft = db.Column(db.Boolean, default=False)
     invisible = db.Column(db.Boolean, default=False)
     protected = db.Column(db.Boolean, default=False)
     password = db.Column(db.String(64))  # Use md5
@@ -108,22 +100,31 @@ class Post(db.Model):
     def __repr__(self):
         return '<Post {}> {}'.format(self.id, self.title)
 
-    def to_dict(self, summary=False):
+    def to_dict(self, summary=False, detail=False):
         result = {'id': self.id}
         if not self.invisible:
             result = dict(
                 result, **{
-                    'title': self.title,
-                    'post_time': self.post_time,
-                    'category_id': self.category_id,
-                    'author': self.author,
+                    'title':
+                    self.title,
+                    'post_time':
+                    self.post_time,
+                    'category': (self.category_id, self.category.title
+                                 if self.category_id else ''),
+                    'author':
+                    self.author,
                     'tags': [(tag.id, tag.content) for tag in self.tags.all()],
-                    'draft': self.draft,
-                    'invisible': self.invisible,
-                    'protected': self.protected
+                    'draft':
+                    self.draft,
+                    'invisible':
+                    self.invisible,
+                    'protected':
+                    self.protected
                 })
             if not self.protected:
                 if summary:
+                    result = dict(result, **{'summary': self.summary})
+                if detail:
                     result = dict(
                         result, **{
                             'content':
@@ -133,8 +134,33 @@ class Post(db.Model):
                         })
         return result
 
-    def to_json(self, summary=True):
-        return jsonify(self.to_dict(summary))
+    def to_json(self, summary=True, detail=True):
+        return jsonify(self.to_dict(summary, detail))
+
+
+class Category(db.Model):
+    id = db.Column(db.Integer, primary_key=True)
+    title = db.Column(db.String(140))
+    summary = db.Column(db.Text)
+
+    # posts = db.relationship("Post", back_populates="category", lazy="dynamic")
+    posts = db.relationship("Post", backref="category", lazy="dynamic")
+
+    def add_post(self, post):
+        if not self.has_post(post):
+            self.posts.append(post)
+            return self
+
+    def remove_post(self, post):
+        if self.has_tag(post):
+            self.posts.remove(post)
+            return self
+
+    def has_post(self, post):
+        return self.posts.filter(Post.id == post.id).count() > 0
+
+    def __repr__(self):
+        return '<Category {}> {}'.format(self.id, self.title)
 
 
 class Page(db.Model):
