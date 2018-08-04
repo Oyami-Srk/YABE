@@ -21,6 +21,7 @@ def get_all_posts():
         next = url_for('api.get_all_posts', page=page + 1, _external=True)
 
     summary = request.args.get('summary', False, type=bool)
+    print(list(map(lambda x: x.draft, [post for post in pagination.items])))
     return jsonify({
         'posts': [post.to_dict(summary) for post in posts],
         'prev': prev,
