@@ -7,7 +7,7 @@ To force on my study and drag me away from the frontend which is actually not my
 
 I have made a decided that this project will be paused for about 2 year (time when I finish my high school).
 
-Minor modified will be push and when I'm boring with what I currently do, I will restart it for a minute.
+Minor modified will be push and when I'm bored with what I currently do, I will restart it for a minute.
 
 Frontend is not the way I will go. Full-stack neither.
 
